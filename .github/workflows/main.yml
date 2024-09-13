@@ -1,0 +1,68 @@
+name: 检测KMS状态
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 每小时运行一次
+  workflow_dispatch: # 手动触发
+
+jobs:
+  check_port:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取完整的历史记录，以便进行拉取和合并
+
+      - name: Check if port 1688 is open
+        run: |
+          # 设置时区为中国时间
+          export TZ='Asia/Shanghai'
+          # 获取当前中国时间
+          CHECK_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+          echo '<!DOCTYPE HTML><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="keywords" content="KMS服务器状态监控系统"><meta name="description" content="KMS服务器状态监控系统"><title>KMS服务器状态监控系统</title><style>*{margin:0;text-decoration:none;text-align:center;font-weight:lighter;}a{color:#00AEED;}</style><link rel="shortcut icon" href="https://c.s-microsoft.com/favicon.ico"><link rel="bookmark" href="https://c.s-microsoft.com/favicon.ico"></head><body>' > index.html
+
+          # 检测端口是否开放
+          if nc -zv kms.jihuowin.com 1688; then
+            echo '<div style="margin-top:10em;"><h1>KMS服务 kms.jihuowin.com 在线</h1><br><h1>激活测试结果：Windows 10 Activated Successfully ！</h1></div>' >> index.html
+          else
+            echo '<div style="margin-top:10em;"><h1>KMS服务 kms.jihuowin.com 离线</h1><br><h1>激活测试结果：Windows 10 Activated failed ！</h1></div>' >> index.html
+          fi
+
+          # 添加检测时间到文件
+          echo "<div style=\"margin-top:2em;\">上次激活测试时间: $CHECK_TIME<br><a href=\"https://jihuowin.com\">Windows系统一句命令激活 https://jihuowin.com</a></div></body></html>" >> index.html
+
+      - name: Configure git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@users.noreply.github.com'
+
+      - name: Stash changes before pulling
+        run: |
+          # 暂存当前更改
+          git add index.html
+          git stash
+
+      - name: Pull latest changes
+        run: |
+          # 拉取并重排最新的远程更改
+          git pull origin main --rebase
+
+      - name: Apply stashed changes
+        run: |
+          # 应用暂存的更改
+          git stash pop || echo "No stashed changes to apply"
+
+      - name: Commit changes
+        run: |
+          # 提交更改
+          git add index.html
+          git commit -m "Update port status and time" || echo "No changes to commit"  # 如果没有变化，不会提交
+        continue-on-error: true
+
+      - name: Push changes
+        run: |
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
