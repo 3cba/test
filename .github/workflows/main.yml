@@ -1,1 +1,28 @@
+name: Send Telegram Message
 
+on:
+  workflow_dispatch:
+    inputs:
+      telegram_token:
+        description: 'Telegram Bot Token'
+        required: true
+        type: string
+      chat_id:
+        description: 'Telegram Chat ID'
+        required: true
+        type: string
+      message:
+        description: 'Message to send'
+        required: true
+        type: string
+
+jobs:
+  send_message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send message to Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ github.event.inputs.telegram_token }}/sendMessage \
+            -d chat_id=${{ github.event.inputs.chat_id }} \
+            -d text="${{ github.event.inputs.message }}"
