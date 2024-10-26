@@ -24,7 +24,7 @@ jobs:
       - name: Send message to Telegram
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ github.event.inputs.telegram_token }}/sendMessage \
-            -d parse_mode=HTML \
+            -d parse_mode="MarkdownV2" \
             -d disable_web_page_preview=true \
             -d chat_id=${{ github.event.inputs.chat_id }} \
             -d text="${{ github.event.inputs.message }}"
